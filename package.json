@@ -1,0 +1,36 @@
+{
+  "name": "mp3-duration",
+  "version": "1.0.5",
+  "description": "Get the duration of an MP3 file",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --harmony tests/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ddsol/mp3-duration"
+  },
+  "engines": {
+    "node": ">=0.11.0"
+  },
+  "keywords": [
+    "mp3",
+    "duration",
+    "length",
+    "file",
+    "audio"
+  ],
+  "author": "Han de Boer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ddsol/mp3-duration/issues"
+  },
+  "homepage": "https://github.com/ddsol/mp3-duration",
+  "dependencies": {
+    "suspend": "^0.6.1",
+    "thunkify": "^2.1.2"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.4"
+  }
+}
