@@ -1,6 +1,6 @@
 {
   "name": "mp3-duration",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Get the duration of an MP3 file",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,8 @@
   },
   "homepage": "https://github.com/ddsol/mp3-duration",
   "dependencies": {
-    "suspend": "^0.6.1",
+    "es6-promisify": "^3.0.0",
+    "suspend": "^0.7.0",
     "thunkify": "^2.1.2"
   },
   "devDependencies": {

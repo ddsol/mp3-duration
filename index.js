@@ -1,11 +1,11 @@
 var fs = require('fs'),
     suspend = require('suspend'),
-    thunkify = require('thunkify');
+    promisify = require('es6-promisify');
 
-var $open=thunkify(fs.open),   //(filename, flags [, mode])
-    $read=thunkify(fs.read).bind(fs),   //(fd, buffer, bufferOffset, length, position)
-    $fstat=thunkify(fs.fstat).bind(fs), //(fs)
-    $close=thunkify(fs.close).bind(fs);
+var $open=promisify(fs.open),   //(filename, flags [, mode])
+    $read=promisify(fs.read).bind(fs),   //(fd, buffer, bufferOffset, length, position)
+    $fstat=promisify(fs.fstat).bind(fs), //(fs)
+    $close=promisify(fs.close).bind(fs);
 
 function skipId3(buffer) {
     var id3v2Flags,  z0, z1, z2, z3, tagSize, footerSize;
