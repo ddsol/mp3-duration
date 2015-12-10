@@ -172,25 +172,21 @@ function mp3Duration(filename, cbrEstimate, callback) {
 
       while (offset < stat.size) {
         bytesRead = yield $read(fd, buffer, 0, 10, offset);
-        if (bytesRead < 10) return duration;
+        if (bytesRead < 10) return round(duration);
 
         //Looking for 1111 1111 111 (frame synchronization bits)
         if (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) {
           info = parseFrameHeader(buffer);
-          if (!info.frameSize) {
-            //some corrupt mp3 files
-            return round(duration);
-          }
-          if (info.samples) {
-            offset+= info.frameSize;
+          if (info.frameSize && info.samples) {
+            offset += info.frameSize;
             duration += ( info.samples / info.sampleRate );
           } else {
-            offset++;
+            offset++; //Corrupt file?
           }
         } else if (buffer[0] === 0x54 && buffer[1] === 0x41 && buffer[2] === 0x47) {//'TAG'
           offset += 128; //Skip over id3v1 tag size
         } else {
-          offset++; //Shouldn't happen much
+          offset++; //Corrupt file?
         }
 
         if (cbrEstimate && info) {
