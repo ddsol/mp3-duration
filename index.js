@@ -1,3 +1,5 @@
+'use strict';
+
 var fs        = require('fs')
   , suspend   = require('suspend')
   , promisify = require('promisify').cb_func()
