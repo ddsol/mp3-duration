@@ -1,6 +1,6 @@
 {
   "name": "mp3-duration",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Get the duration of an MP3 file",
   "main": "index.js",
   "scripts": {
