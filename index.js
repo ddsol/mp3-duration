@@ -21,7 +21,7 @@ function skipId3(buffer) {
     ;
 
   //http://id3.org/d3v2.3.0
-  if (buffer[0] == 0x49 && buffer[1] == 0x44 && buffer[2] == 0x33) { //'ID3'
+  if (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) { //'ID3'
     id3v2Flags = buffer[5];
     footerSize = (id3v2Flags & 0x10) ? 10 : 0;
 
@@ -30,7 +30,7 @@ function skipId3(buffer) {
     z1 = buffer[7];
     z2 = buffer[8];
     z3 = buffer[9];
-    if (((z0 & 0x80) == 0) && ((z1 & 0x80) == 0) && ((z2 & 0x80) == 0) && ((z3 & 0x80) == 0)) {
+    if (((z0 & 0x80) === 0) && ((z1 & 0x80) === 0) && ((z2 & 0x80) === 0) && ((z3 & 0x80) === 0)) {
       tagSize = ((z0 & 0x7f) * 2097152) + ((z1 & 0x7f) * 16384) + ((z2 & 0x7f) * 128) + (z3 & 0x7f);
       return 10 + tagSize + footerSize;
     }
@@ -57,12 +57,20 @@ var versions    = ['2.5', 'x', '2', '1']
       '2.5': [11025, 12000,  8000]
     }
   , samples     = {
+      x: {
+        x: 0,
+        1: 0,
+        2: 0,
+        3: 0
+      },
       1: { //MPEGv1,     Layers 1,2,3
+        x: 0,
         1: 384,
         2: 1152,
         3: 1152
       },
       2: { //MPEGv2/2.5, Layers 1,2,3
+        x: 0,
         1: 384,
         2: 1152,
         3: 576
@@ -70,11 +78,11 @@ var versions    = ['2.5', 'x', '2', '1']
     }
   ;
 
-function frameSize(layer, bitRate, sampleRate, paddingBit) {
-  if (layer == 1) {
-    return (((12 * bitRate * 1000 / sampleRate) + paddingBit) * 4) | 0;
+function frameSize(samples, layer, bitRate, sampleRate, paddingBit) {
+  if (layer === 1) {
+    return (((samples * bitRate * 125 / sampleRate) + paddingBit * 4)) | 0;
   } else { //layer 2, 3
-    return (((144 * bitRate * 1000) / sampleRate) + paddingBit) | 0;
+    return (((samples * bitRate * 125) / sampleRate) + paddingBit) | 0;
   }
 }
 
@@ -93,6 +101,7 @@ function parseFrameHeader(header) {
     , sampleRateIdx
     , sampleRate
     , paddingBit
+    , sample
     ;
 
   b1 = header[1];
@@ -100,7 +109,7 @@ function parseFrameHeader(header) {
 
   versionBits = (b1 & 0x18) >> 3;
   version = versions[versionBits];
-  simpleVersion = (version == '2.5' ? 2 : version);
+  simpleVersion = (version === '2.5' ? 2 : version);
 
   layerBits = (b1 & 0x06) >> 1;
   layer = layers[layerBits];
@@ -112,13 +121,14 @@ function parseFrameHeader(header) {
   sampleRateIdx = (b2 & 0x0c) >> 2;
   sampleRate = sampleRates[version][sampleRateIdx] || 0;
 
-  paddingBit = (b2 & 0x02) >> 1;
+  sample = samples[simpleVersion][layer];
 
+  paddingBit = (b2 & 0x02) >> 1;
   return {
     bitRate:    bitRate,
     sampleRate: sampleRate,
-    frameSize:  frameSize(layer, bitRate, sampleRate, paddingBit),
-    samples:    samples[simpleVersion][layer]
+    frameSize:  frameSize(sample, layer, bitRate, sampleRate, paddingBit),
+    samples:    sample
   };
 }
 
@@ -135,7 +145,7 @@ function round(duration) {
 }
 
 function mp3Duration(filename, cbrEstimate, callback) {
-  if (typeof cbrEstimate == "function") {
+  if (typeof cbrEstimate === "function") {
     callback = cbrEstimate;
     cbrEstimate = false;
   }
@@ -165,15 +175,19 @@ function mp3Duration(filename, cbrEstimate, callback) {
         if (bytesRead < 10) return duration;
 
         //Looking for 1111 1111 111 (frame synchronization bits)
-        if (buffer[0] == 0xff && (buffer[1] & 0xe0) == 0xe0) {
+        if (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) {
           info = parseFrameHeader(buffer);
           if (!info.frameSize) {
             //some corrupt mp3 files
             return round(duration);
           }
-          offset += info.frameSize;
-          duration += ( info.samples / info.sampleRate );
-        } else if (buffer[0] == 0x54 && buffer[1] == 0x41 && buffer[2] == 0x47) {//'TAG'
+          if (info.samples) {
+            offset+= info.frameSize;
+            duration += ( info.samples / info.sampleRate );
+          } else {
+            offset++;
+          }
+        } else if (buffer[0] === 0x54 && buffer[1] === 0x41 && buffer[2] === 0x47) {//'TAG'
           offset += 128; //Skip over id3v1 tag size
         } else {
           offset++; //Shouldn't happen much

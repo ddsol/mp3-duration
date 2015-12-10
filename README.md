@@ -15,10 +15,9 @@ $ npm install --save mp3-duration
 var mp3Duration = require('mp3-duration');
 
 mp3Duration('file.mp3', function (err, duration) {
-	if (err) return console.log(err.message);
-	console.log('Your file is '+duration+' seconds long');
+  if (err) return console.log(err.message);
+  console.log('Your file is ' + duration + ' seconds long');
 });
-
 ```
 
 ## API

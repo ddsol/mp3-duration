@@ -28,7 +28,7 @@
   "homepage": "https://github.com/ddsol/mp3-duration",
   "dependencies": {
     "promisify": "0.0.3",
-    "suspend": "^0.6.1"
+    "suspend": "^0.7.0"
   },
   "devDependencies": {
     "mocha": "^2.2.4"
