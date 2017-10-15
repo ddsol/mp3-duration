@@ -189,7 +189,6 @@ function mp3Duration(filename, cbrEstimate, callback) {
       offset = skipId3(buffer);
 
       while (offset < (isBuffer ? srcBuffer.length : stat.size)) {
-        //console.log('WHile')
         if (!isBuffer) {
           bytesRead = yield $read(fd, buffer, 0, 10, offset);
         } else {
