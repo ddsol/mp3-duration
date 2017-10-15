@@ -161,21 +161,41 @@ function mp3Duration(filename, cbrEstimate, callback) {
       , offset
       , stat
       , info
+      , srcBuffer
+      , isBuffer = false
       ;
 
-    fd = yield $open(filename, 'r');
+      if (typeof filename === 'string') {
+        fd = yield $open(filename, 'r');
+      } else if (filename instanceof Buffer) {
+        srcBuffer = filename;
+        isBuffer = true;
+      }
     try {
 
-      stat = yield $fstat(fd);
+      if (!isBuffer) {
+        stat = yield $fstat(fd);
+      }
 
       buffer = new Buffer(100);
-      bytesRead = yield $read(fd, buffer, 0, 100, 0);
+
+      if (!isBuffer) {
+        bytesRead = yield $read(fd, buffer, 0, 100, 0);
+      } else {
+        bytesRead = srcBuffer.copy(buffer, 0, 0, 100);
+      }
       if (bytesRead < 100) return 0;
 
       offset = skipId3(buffer);
 
-      while (offset < stat.size) {
-        bytesRead = yield $read(fd, buffer, 0, 10, offset);
+      while (offset < (isBuffer ? srcBuffer.length : stat.size)) {
+        //console.log('WHile')
+        if (!isBuffer) {
+          bytesRead = yield $read(fd, buffer, 0, 10, offset);
+        } else {
+          bytesRead = srcBuffer.copy(buffer, 0, offset, offset + 10);
+        }
+
         if (bytesRead < 10) return round(duration);
 
         //Looking for 1111 1111 111 (frame synchronization bits)
@@ -201,7 +221,9 @@ function mp3Duration(filename, cbrEstimate, callback) {
       return round(duration);
 
     } finally {
-      yield $close(fd);
+      if (!isBuffer) {
+        yield $close(fd);
+      }
     }
 
   }, callback);
