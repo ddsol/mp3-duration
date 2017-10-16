@@ -1,14 +1,13 @@
 'use strict';
 
-var fs        = require('fs')
-  , suspend   = require('suspend')
+var fs = require('fs')
+  , suspend = require('suspend')
   , promisify = require('promisify').cb_func()
 
-  , $open  = promisify(fs.open)           //(filename, flags [, mode])
-  , $read  = promisify(fs.read).bind(fs)  //(fd, buffer, bufferOffset, length, position)
+  , $open = promisify(fs.open) //(filename, flags [, mode])
+  , $read = promisify(fs.read).bind(fs) //(fd, buffer, bufferOffset, length, position)
   , $fstat = promisify(fs.fstat).bind(fs) //(fs)
-  , $close = promisify(fs.close).bind(fs)
-  ;
+  , $close = promisify(fs.close).bind(fs);
 
 function skipId3(buffer) {
   var id3v2Flags
@@ -17,8 +16,7 @@ function skipId3(buffer) {
     , z2
     , z3
     , tagSize
-    , footerSize
-    ;
+    , footerSize;
 
   //http://id3.org/d3v2.3.0
   if (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) { //'ID3'
@@ -38,49 +36,48 @@ function skipId3(buffer) {
   return 0;
 }
 
-var versions    = ['2.5', 'x', '2', '1']
-  , layers      = ['x', '3', '2', '1']
-  , bitRates    = {
-      'V1Lx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
-      'V1L1' : [0,32,64,96,128,160,192,224,256,288,320,352,384,416,448],
-      'V1L2' : [0,32,48,56, 64, 80, 96,112,128,160,192,224,256,320,384],
-      'V1L3' : [0,32,40,48, 56, 64, 80, 96,112,128,160,192,224,256,320],
-      'V2Lx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
-      'V2L1' : [0,32,48,56, 64, 80, 96,112,128,144,160,176,192,224,256],
-      'V2L2' : [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160],
-      'V2L3' : [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160],
-      'VxLx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
-      'VxL1' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
-      'VxL2' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
-      'VxL3' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0]
-    }
+var versions = ['2.5', 'x', '2', '1']
+  , layers = ['x', '3', '2', '1']
+  , bitRates = {
+    'V1Lx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    'V1L1' : [0,32,64,96,128,160,192,224,256,288,320,352,384,416,448],
+    'V1L2' : [0,32,48,56, 64, 80, 96,112,128,160,192,224,256,320,384],
+    'V1L3' : [0,32,40,48, 56, 64, 80, 96,112,128,160,192,224,256,320],
+    'V2Lx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    'V2L1' : [0,32,48,56, 64, 80, 96,112,128,144,160,176,192,224,256],
+    'V2L2' : [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160],
+    'V2L3' : [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160],
+    'VxLx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    'VxL1' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    'VxL2' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    'VxL3' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0]
+  }
   , sampleRates = {
-      'x':   [    0,     0,     0],
-      '1':   [44100, 48000, 32000],
-      '2':   [22050, 24000, 16000],
-      '2.5': [11025, 12000,  8000]
+    'x':   [    0,     0,     0],
+    '1':   [44100, 48000, 32000],
+    '2':   [22050, 24000, 16000],
+    '2.5': [11025, 12000,  8000]
+  }
+  , samples = {
+    x: {
+      x: 0,
+      1: 0,
+      2: 0,
+      3: 0
+    },
+    1: { //MPEGv1,     Layers 1,2,3
+      x: 0,
+      1: 384,
+      2: 1152,
+      3: 1152
+    },
+    2: { //MPEGv2/2.5, Layers 1,2,3
+      x: 0,
+      1: 384,
+      2: 1152,
+      3: 576
     }
-  , samples     = {
-      x: {
-        x: 0,
-        1: 0,
-        2: 0,
-        3: 0
-      },
-      1: { //MPEGv1,     Layers 1,2,3
-        x: 0,
-        1: 384,
-        2: 1152,
-        3: 1152
-      },
-      2: { //MPEGv2/2.5, Layers 1,2,3
-        x: 0,
-        1: 384,
-        2: 1152,
-        3: 576
-      }
-    }
-  ;
+  };
 
 function frameSize(samples, layer, bitRate, sampleRate, paddingBit) {
   if (layer === 1) {
@@ -91,7 +88,6 @@ function frameSize(samples, layer, bitRate, sampleRate, paddingBit) {
 }
 
 function parseFrameHeader(header) {
-
   var b1
     , b2
     , versionBits
@@ -105,8 +101,7 @@ function parseFrameHeader(header) {
     , sampleRateIdx
     , sampleRate
     , paddingBit
-    , sample
-    ;
+    , sample;
 
   b1 = header[1];
   b2 = header[2];
@@ -129,17 +124,16 @@ function parseFrameHeader(header) {
 
   paddingBit = (b2 & 0x02) >> 1;
   return {
-    bitRate:    bitRate,
+    bitRate: bitRate,
     sampleRate: sampleRate,
-    frameSize:  frameSize(sample, layer, bitRate, sampleRate, paddingBit),
-    samples:    sample
+    frameSize: frameSize(sample, layer, bitRate, sampleRate, paddingBit),
+    samples: sample
   };
 }
 
 function estimateDuration(bitRate, offset, fileSize) {
-  var kbps     = (bitRate * 1000) / 8
-    , dataSize = fileSize - offset
-    ;
+  var kbps = (bitRate * 1000) / 8
+    , dataSize = fileSize - offset;
 
   return round(dataSize / kbps);
 }
@@ -149,11 +143,11 @@ function round(duration) {
 }
 
 function mp3Duration(filename, cbrEstimate, callback) {
-  if (typeof cbrEstimate === "function") {
+  if (typeof cbrEstimate === 'function') {
     callback = cbrEstimate;
     cbrEstimate = false;
   }
-  suspend.run(function*() {
+  suspend.run(function* () {
     var duration = 0
       , fd
       , buffer
@@ -162,15 +156,15 @@ function mp3Duration(filename, cbrEstimate, callback) {
       , stat
       , info
       , srcBuffer
-      , isBuffer = false
-      ;
+      , isBuffer = false;
 
-      if (typeof filename === 'string') {
-        fd = yield $open(filename, 'r');
-      } else if (filename instanceof Buffer) {
-        srcBuffer = filename;
-        isBuffer = true;
-      }
+    if (typeof filename === 'string') {
+      fd = yield $open(filename, 'r');
+    } else if (filename instanceof Buffer) {
+      srcBuffer = filename;
+      isBuffer = true;
+    }
+
     try {
 
       if (!isBuffer) {
