@@ -1,13 +1,13 @@
 'use strict';
 
 var fs = require('fs')
-  , suspend = require('suspend')
-  , promisify = require('promisify').cb_func()
+  , Promise = require('bluebird')
+  , co = require('bluebird-co').co
 
-  , $open = promisify(fs.open) //(filename, flags [, mode])
-  , $read = promisify(fs.read).bind(fs) //(fd, buffer, bufferOffset, length, position)
-  , $fstat = promisify(fs.fstat).bind(fs) //(fs)
-  , $close = promisify(fs.close).bind(fs);
+  , open = Promise.promisify(fs.open) //(filename, flags [, mode])
+  , read = Promise.promisify(fs.read).bind(fs) //(fd, buffer, bufferOffset, length, position)
+  , fstat = Promise.promisify(fs.fstat).bind(fs) //(fs)
+  , close = Promise.promisify(fs.close).bind(fs);
 
 function skipId3(buffer) {
   var id3v2Flags
@@ -147,7 +147,7 @@ function mp3Duration(filename, cbrEstimate, callback) {
     callback = cbrEstimate;
     cbrEstimate = false;
   }
-  suspend.run(function* () {
+  return co(function* () {
     var duration = 0
       , fd
       , buffer
@@ -159,22 +159,21 @@ function mp3Duration(filename, cbrEstimate, callback) {
       , isBuffer = false;
 
     if (typeof filename === 'string') {
-      fd = yield $open(filename, 'r');
+      fd = yield open(filename, 'r');
     } else if (filename instanceof Buffer) {
       srcBuffer = filename;
       isBuffer = true;
     }
 
     try {
-
       if (!isBuffer) {
-        stat = yield $fstat(fd);
+        stat = yield fstat(fd);
       }
 
       buffer = new Buffer(100);
 
       if (!isBuffer) {
-        bytesRead = yield $read(fd, buffer, 0, 100, 0);
+        bytesRead = yield read(fd, buffer, 0, 100, 0);
       } else {
         bytesRead = srcBuffer.copy(buffer, 0, 0, 100);
       }
@@ -184,7 +183,7 @@ function mp3Duration(filename, cbrEstimate, callback) {
 
       while (offset < (isBuffer ? srcBuffer.length : stat.size)) {
         if (!isBuffer) {
-          bytesRead = yield $read(fd, buffer, 0, 10, offset);
+          bytesRead = yield read(fd, buffer, 0, 10, offset);
         } else {
           bytesRead = srcBuffer.copy(buffer, 0, offset, offset + 10);
         }
@@ -215,11 +214,11 @@ function mp3Duration(filename, cbrEstimate, callback) {
 
     } finally {
       if (!isBuffer) {
-        yield $close(fd);
+        yield close(fd);
       }
     }
 
-  }, callback);
+  }).asCallback(callback);
 }
 
 module.exports = mp3Duration;
