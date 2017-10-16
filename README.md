@@ -22,19 +22,31 @@ mp3Duration('file.mp3', function (err, duration) {
 
 ## API
 
-## mp3Duration(filePath, callback) 
+## mp3Duration(filePathOrBuffer [, cbrEstimate] [, callback])
 
-### filePath
+### filePathOrBuffer
 
-Type: `string`
+Type: `string` | `Buffer`
 
-Path to the file
+Path to the file or a buffer with the file's contents
+
+### cbrEstimate
+
+Defaults to `false`. When set to `true`, will estimate the length of a
+constant-bitrate mp3. This speeds up the calculation a lot but isn't
+guaranteed to be accurate.
 
 ### callback(error, duration)
 
 Type: `function`
 
-Callback to be called once duration is calculated
+Callback to be called once duration is calculated. It's also possible to
+instead use the returned `Promise`. `duration` is the duration of the
+mp3 in `ms`.
+
+### Return value
+
+`mp3Duration` returns a Promise that resolves to the duration of the mp3 in `ms` or rejects with some error.
 
 ## License
 
