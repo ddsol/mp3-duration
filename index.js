@@ -1,13 +1,12 @@
 'use strict';
 
-var fs = require('fs')
-  , Promise = require('bluebird')
-  , co = require('bluebird-co').co
+const fs = require('fs');
+const { promisify } = require('util');
 
-  , open = Promise.promisify(fs.open) //(filename, flags [, mode])
-  , read = Promise.promisify(fs.read).bind(fs) //(fd, buffer, bufferOffset, length, position)
-  , fstat = Promise.promisify(fs.fstat).bind(fs) //(fs)
-  , close = Promise.promisify(fs.close).bind(fs);
+const open = promisify(fs.open);
+const read = promisify(fs.read);
+const fstat = promisify(fs.fstat);
+const close = promisify(fs.close);
 
 function skipId3(buffer) {
   var id3v2Flags
@@ -36,7 +35,7 @@ function skipId3(buffer) {
   return 0;
 }
 
-var versions = ['2.5', 'x', '2', '1']
+const versions = ['2.5', 'x', '2', '1']
   , layers = ['x', '3', '2', '1']
   , bitRates = {
     'V1Lx' : [0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
@@ -142,83 +141,76 @@ function round(duration) {
   return Math.round(duration * 1000) / 1000; //round to nearest ms
 }
 
-function mp3Duration(filename, cbrEstimate, callback) {
-  if (typeof cbrEstimate === 'function') {
-    callback = cbrEstimate;
-    cbrEstimate = false;
-  }
-  return co(function* () {
-    var duration = 0
-      , fd
-      , buffer
-      , bytesRead
-      , offset
-      , stat
-      , info
-      , srcBuffer
-      , isBuffer = false;
+async function mp3Duration(filename, cbrEstimate = false) {
+  var duration = 0
+    , fd
+    , buffer
+    , bytesRead
+    , offset
+    , stat
+    , info
+    , srcBuffer
+    , isBuffer = false;
 
-    if (typeof filename === 'string') {
-      fd = yield open(filename, 'r');
-    } else if (filename instanceof Buffer) {
-      srcBuffer = filename;
-      isBuffer = true;
+  if (typeof filename === 'string') {
+    fd = await open(filename, 'r');
+  } else if (filename instanceof Buffer) {
+    srcBuffer = filename;
+    isBuffer = true;
+  }
+
+  try {
+    if (!isBuffer) {
+      stat = await fstat(fd);
     }
 
-    try {
-      if (!isBuffer) {
-        stat = yield fstat(fd);
-      }
+    buffer = Buffer.alloc(100);
 
-      buffer = new Buffer(100);
+    if (!isBuffer) {
+      bytesRead = await read(fd, buffer, 0, 100, 0);
+    } else {
+      bytesRead = srcBuffer.copy(buffer, 0, 0, 100);
+    }
+    if (bytesRead < 100) return 0;
 
+    offset = skipId3(buffer);
+
+    while (offset < (isBuffer ? srcBuffer.length : stat.size)) {
       if (!isBuffer) {
-        bytesRead = yield read(fd, buffer, 0, 100, 0);
+        bytesRead = await read(fd, buffer, 0, 10, offset);
       } else {
-        bytesRead = srcBuffer.copy(buffer, 0, 0, 100);
+        bytesRead = srcBuffer.copy(buffer, 0, offset, offset + 10);
       }
-      if (bytesRead < 100) return 0;
 
-      offset = skipId3(buffer);
+      if (bytesRead < 10) return round(duration);
 
-      while (offset < (isBuffer ? srcBuffer.length : stat.size)) {
-        if (!isBuffer) {
-          bytesRead = yield read(fd, buffer, 0, 10, offset);
-        } else {
-          bytesRead = srcBuffer.copy(buffer, 0, offset, offset + 10);
-        }
-
-        if (bytesRead < 10) return round(duration);
-
-        //Looking for 1111 1111 111 (frame synchronization bits)
-        if (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) {
-          info = parseFrameHeader(buffer);
-          if (info.frameSize && info.samples) {
-            offset += info.frameSize;
-            duration += ( info.samples / info.sampleRate );
-          } else {
-            offset++; //Corrupt file?
-          }
-        } else if (buffer[0] === 0x54 && buffer[1] === 0x41 && buffer[2] === 0x47) {//'TAG'
-          offset += 128; //Skip over id3v1 tag size
+      //Looking for 1111 1111 111 (frame synchronization bits)
+      if (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) {
+        info = parseFrameHeader(buffer);
+        if (info.frameSize && info.samples) {
+          offset += info.frameSize;
+          duration += ( info.samples / info.sampleRate );
         } else {
           offset++; //Corrupt file?
         }
-
-        if (cbrEstimate && info) {
-          return round(estimateDuration(info.bitRate, offset, stat.size));
-        }
+      } else if (buffer[0] === 0x54 && buffer[1] === 0x41 && buffer[2] === 0x47) {//'TAG'
+        offset += 128; //Skip over id3v1 tag size
+      } else {
+        offset++; //Corrupt file?
       }
 
-      return round(duration);
-
-    } finally {
-      if (!isBuffer) {
-        yield close(fd);
+      if (cbrEstimate && info) {
+        return round(estimateDuration(info.bitRate, offset, stat.size));
       }
     }
 
-  }).asCallback(callback);
+    return round(duration);
+
+  } finally {
+    if (!isBuffer) {
+      await close(fd);
+    }
+  }
 }
 
 module.exports = mp3Duration;
