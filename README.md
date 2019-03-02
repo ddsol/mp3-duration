@@ -46,7 +46,7 @@ mp3 in `ms`.
 
 ### Return value
 
-`mp3Duration` returns a Promise that resolves to the duration of the mp3 in `ms` or rejects with some error.
+`mp3Duration` returns a Promise that resolves to the duration of the mp3 in `seconds` or rejects with some error.
 
 ## License
 
