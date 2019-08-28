@@ -1,6 +1,6 @@
 # mp3-duration ![Travis-Build](https://travis-ci.org/ddsol/mp3-duration.svg?branch=master)
 
-> Calculate duration of an MP3
+> Calculate duration of an MP3 in seconds
 
 
 ## Install
@@ -42,7 +42,7 @@ Type: `function`
 
 Callback to be called once duration is calculated. It's also possible to
 instead use the returned `Promise`. `duration` is the duration of the
-mp3 in `ms`.
+mp3 in `seconds` (including fractional seconds).
 
 ### Return value
 
